@@ -1,2 +1,51 @@
 # zbx-raid-all
-Monitorizacion unificada de pools de almacenamiento (ZFS/ssacli/storcli) para Zabbix
+
+Paquete `.deb` para **monitorizar el estado de pools de almacenamiento** (RAID / ZFS) en servidores Proxmox u otros sistemas Linux mediante `zabbix-agent2`.
+
+El objetivo es exponer en Zabbix:
+
+- Un **descubrimiento unificado de pools** (ZFS, controladoras HP con `ssacli`, controladoras LSI/DELL con `storcli`, etc.).
+- Un ítem de **estado por pool**, independiente del hardware.
+
+Ejemplo de ítems en Zabbix:
+
+- `zbx.storage.pool.discovery`
+- `zbx.storage.pool.state[{#POOLID}]`
+
+---
+
+## Arquitectura
+
+En cada servidor:
+
+- Un script coordinador:
+  - `/usr/local/sbin/zbx_raid_collect.sh`
+- Backends por tipo de almacenamiento:
+  - `/usr/lib/zbx-raid/backend_zfs.sh`
+  - `/usr/lib/zbx-raid/backend_ssacli.sh` *(opcional, cuando se implemente)*
+  - `/usr/lib/zbx-raid/backend_storcli.sh` *(opcional, cuando se implemente)*
+- Un directorio de datos:
+  - `/var/lib/zbx-raid/`
+- Un cron que ejecuta el recolector:
+  - `/etc/cron.d/zbx-raid`
+- UserParameters de Zabbix:
+  - `/etc/zabbix/zabbix_agent2.d/zbx-raid.conf`
+
+El diseño sigue el patrón:
+
+> **root** ejecuta los scripts por cron y escribe ficheros →  
+> **Zabbix** solo lee esos ficheros (sin sudo, sin timeouts).
+
+---
+
+## Modelo de datos
+
+### Directorio de datos
+
+```text
+/var/lib/zbx-raid/
+  pools_discovery.json
+  pool_zfs_rpool.state
+  pool_ssacli_c0_ld1.state
+  pool_storcli_c0_vd0.state
+  ...
