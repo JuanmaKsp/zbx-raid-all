@@ -1,41 +1,53 @@
-```markdown
-# Changelog
+# zbx-raid-all
 
-Todas las versiones de `zbx-raid-all`.  
-Formato: `Versión — Fecha — Resumen`.
+Paquete `.deb` para **monitorizar el estado de pools de almacenamiento** (RAID / ZFS) en servidores Proxmox u otros sistemas Linux mediante `zabbix-agent2`.
+
+El objetivo es exponer en Zabbix:
+
+- Un **descubrimiento unificado de pools** (ZFS, controladoras HP con `ssacli`, controladoras LSI/DELL con `storcli`, etc.).
+- Un ítem de **estado por pool**, independiente del hardware.
+
+Ejemplo de ítems en Zabbix:
+
+- `zbx.storage.pool.discovery`
+- `zbx.storage.pool.state[{#POOLID}]`
+- `zbx.storage.pool.state.code[{#POOLID}]` (ítem dependiente numérico para colores)
 
 ---
 
-## 1.0-1 — 2025-12-XX
+## Arquitectura
 
-### Añadido
+En cada servidor:
 
-- Versión inicial del paquete `zbx-raid-all`.
-- Arquitectura de recolección unificada de pools:
-  - Script coordinador `/usr/local/sbin/zbx_raid_collect.sh`.
-  - Directorio de datos `/var/lib/zbx-raid/`.
-  - Cron `/etc/cron.d/zbx-raid`.
-  - UserParameters Zabbix en `/etc/zabbix/zabbix_agent2.d/zbx-raid.conf`.
-- Modelo de datos:
-  - Fichero `pools_discovery.json` con LLD unificada de pools.
-  - Ficheros `pool_<POOLID>.state` con el estado de cada pool.
-- Backend ZFS:
-  - Script `/usr/lib/zbx-raid/backend_zfs.sh`.
-  - Detección automática de zpools mediante `zpool list`.
-  - Normalización de estados: `ONLINE` → `OK`, `DEGRADED` → `DEGRADED`,
-    `FAULTED/OFFLINE` → `FAILED`.
-- Integración básica con Zabbix:
-  - `zbx.storage.pool.discovery` para LLD.
-  - `zbx.storage.pool.state[{#POOLID}]` para estado de cada pool.
+- Script coordinador:
+  - `/usr/local/sbin/zbx_raid_collect.sh`
+- Backends por tipo de almacenamiento:
+  - `/usr/lib/zbx-raid/backend_zfs.sh`
+  - `/usr/lib/zbx-raid/backend_ssacli.sh`
+  - `/usr/lib/zbx-raid/backend_storcli.sh`
+- Directorio de datos:
+  - `/var/lib/zbx-raid/`
+- Cron que ejecuta el recolector:
+  - `/etc/cron.d/zbx-raid`
+- UserParameters de Zabbix:
+  - `/etc/zabbix/zabbix_agent2.d/zbx-raid.conf` :contentReference[oaicite:0]{index=0}  
 
-### Pendiente / futuro
+El diseño sigue el patrón:
 
-- Backend ssacli:
-  - Script `/usr/lib/zbx-raid/backend_ssacli.sh` para controladoras HP.
-  - Parseo de configuración de `ssacli ctrl all show config ...`.
-- Backend storcli:
-  - Script `/usr/lib/zbx-raid/backend_storcli.sh` para controladoras LSI/DELL.
-  - Parseo de `storcli64 /cALL /vall show all`.
-- Template Zabbix oficial en este repositorio con:
-  - Protótipo de item `Pool {#POOLID} status`.
-  - Protótipos de trigger para estados `DEGRADED` y `FAILED`.
+> **root** ejecuta los scripts por cron y escribe ficheros →  
+> **Zabbix** solo lee esos ficheros (sin sudo, sin timeouts).
+
+---
+
+## Modelo de datos
+
+### Directorio de datos
+
+```text
+/var/lib/zbx-raid/
+  pools_discovery.json
+  pool_zfs_rpool.state
+  pool_ssacli_c4_ld1.state
+  pool_storcli_c0_vd0.state
+  ...
+
