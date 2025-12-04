@@ -11,6 +11,7 @@ Ejemplo de ítems en Zabbix:
 
 - `zbx.storage.pool.discovery`
 - `zbx.storage.pool.state[{#POOLID}]`
+- `zbx.storage.pool.state.code[{#POOLID}]` (ítem dependiente numérico para colores)
 
 ---
 
@@ -18,15 +19,15 @@ Ejemplo de ítems en Zabbix:
 
 En cada servidor:
 
-- Un script coordinador:
+- Script coordinador:
   - `/usr/local/sbin/zbx_raid_collect.sh`
 - Backends por tipo de almacenamiento:
   - `/usr/lib/zbx-raid/backend_zfs.sh`
-  - `/usr/lib/zbx-raid/backend_ssacli.sh` *(opcional, cuando se implemente)*
-  - `/usr/lib/zbx-raid/backend_storcli.sh` *(opcional, cuando se implemente)*
-- Un directorio de datos:
+  - `/usr/lib/zbx-raid/backend_ssacli.sh`
+  - `/usr/lib/zbx-raid/backend_storcli.sh`
+- Directorio de datos:
   - `/var/lib/zbx-raid/`
-- Un cron que ejecuta el recolector:
+- Cron que ejecuta el recolector:
   - `/etc/cron.d/zbx-raid`
 - UserParameters de Zabbix:
   - `/etc/zabbix/zabbix_agent2.d/zbx-raid.conf`
@@ -46,6 +47,6 @@ El diseño sigue el patrón:
 /var/lib/zbx-raid/
   pools_discovery.json
   pool_zfs_rpool.state
-  pool_ssacli_c0_ld1.state
+  pool_ssacli_c4_ld1.state
   pool_storcli_c0_vd0.state
   ...
